@@ -619,7 +619,7 @@ function MemberManagement({ type, members }: any) {
                                 onChange={e => setPass(e.target.value)}
                             />
                         </div>
-                        <GoldButton loading={adding} className="mt-4">
+                        <GoldButton type="submit" loading={adding} className="mt-4">
                             ADD TO LIST
                         </GoldButton>
                     </form>
