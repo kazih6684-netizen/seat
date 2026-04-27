@@ -1,0 +1,57 @@
+{
+  "entities": {
+    "TeamMember": {
+      "title": "Team Member",
+      "description": "A team leader or trainer who can be selected for booking.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["leader", "trainer"] },
+        "password": { "type": "string", "description": "Verification password for booking" }
+      },
+      "required": ["name", "type", "password"]
+    },
+    "Booking": {
+      "title": "Booking Request",
+      "description": "A seat booking request from a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "selectedMemberName": { "type": "string" },
+        "lastDigit": { "type": "string" },
+        "amount": { "type": "number" },
+        "whatsapp": { "type": "string" },
+        "paymentMethod": { "type": "string", "enum": ["bKash", "Nagad", "Rocket"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "adminNote": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "selectedMemberName", "lastDigit", "amount", "whatsapp", "paymentMethod", "status", "createdAt"]
+    },
+    "AdminConfig": {
+      "title": "Admin Configuration",
+      "description": "Global configuration for admins.",
+      "type": "object",
+      "properties": {
+        "adminEmails": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["adminEmails"]
+    }
+  },
+  "firestore": {
+    "team_members/{memberId}": {
+      "schema": "TeamMember",
+      "description": "Collection of team leaders and trainers."
+    },
+    "bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Collection of all seat booking requests."
+    },
+    "configs/admin": {
+      "schema": "AdminConfig",
+      "description": "Singleton configuration document for admin settings."
+    }
+  }
+}

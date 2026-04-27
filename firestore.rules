@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'kazih6684@gmail.com' ||
+        (exists(/databases/$(database)/documents/configs/admin) && get(/databases/$(database)/documents/configs/admin).data.adminEmails.hasAny([request.auth.token.email]))
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidBooking(data) {
+      return data.keys().hasAll(['userId', 'userName', 'selectedMemberName', 'lastDigit', 'amount', 'whatsapp', 'paymentMethod', 'status', 'createdAt', 'authUid']) &&
+             data.userId is string &&
+             data.userName is string &&
+             data.selectedMemberName is string &&
+             data.lastDigit is string &&
+             (data.amount is number || data.amount is int) &&
+             data.whatsapp is string &&
+             data.paymentMethod in ['bKash', 'Nagad', 'Rocket', 'Cash'] &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             (data.authUid == null || (isSignedIn() && data.authUid == request.auth.uid));
+    }
+
+    // --- Rules ---
+
+    match /configs/admin {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /configs/settings {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /team_members/{memberId} {
+      allow read: if true; // Allow public read for dropdown names
+      allow write: if isAdmin();
+    }
+
+    match /bookings/{bookingId} {
+      // Allow read/list if Admin OR Auth Owner OR Guest knowing their userId
+      allow list: if isAdmin() || (resource.data.userId != null); 
+      
+      allow get: if isAdmin() || (resource.data.userId != null);
+
+      allow create: if isValidBooking(incoming()) &&
+                      incoming().status == 'pending' &&
+                      incoming().createdAt == request.time;
+
+      allow update: if isAdmin() &&
+                      incoming().diff(existing()).affectedKeys().hasAny(['status', 'adminNote', 'updatedAt']) &&
+                      incoming().updatedAt == request.time;
+
+      allow delete: if isAdmin();
+    }
+  }
+}
