@@ -437,10 +437,22 @@ function BookingList({ bookings, actions, onUpdate, onConfirmRequest, onDeleteRe
                                  <Navigation className="w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-1">
-                                    <h3 className="text-white font-black text-[22px] md:text-3xl uppercase tracking-tight truncate leading-tight mb-1">{b.selectedMemberName}</h3>
-                                    <div className={`text-[7px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${b.status === 'pending' ? 'bg-gold/10 text-gold' : b.status === 'approved' || b.status === 'confirmed' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                                        {b.status}
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                    <h3 className="text-white font-black text-[20px] md:text-3xl uppercase tracking-tight truncate leading-tight">{b.selectedMemberName}</h3>
+                                    <div className="flex flex-col items-end gap-1 shrink-0">
+                                        <div className={`text-[6px] md:text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${b.status === 'pending' ? 'bg-gold/10 text-gold' : b.status === 'approved' || b.status === 'confirmed' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                            {b.status}
+                                        </div>
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onSelect(b);
+                                            }}
+                                            className="p-1.5 bg-white/5 text-gold hover:bg-gold hover:text-navy-mid rounded-lg transition-all border border-white/10 shadow-lg"
+                                            title="View Invoice"
+                                        >
+                                            <Bell className="w-3.5 h-3.5" />
+                                        </button>
                                     </div>
                                 </div>
                                 <div className="flex flex-col">
@@ -453,12 +465,6 @@ function BookingList({ bookings, actions, onUpdate, onConfirmRequest, onDeleteRe
                             </div>
                         </div>
                         <div className="flex flex-col gap-2">
-                            <button 
-                                onClick={() => onSelect(b)}
-                                className="p-2.5 bg-white/5 text-muted hover:text-gold rounded-xl transition-colors border border-white/5"
-                            >
-                                <Bell className="w-4 h-4" />
-                            </button>
                             {onDeleteRequest && (
                                 <button 
                                     onClick={() => onDeleteRequest(b.id)}
