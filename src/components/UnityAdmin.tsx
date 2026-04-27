@@ -43,13 +43,38 @@ export function UnityAdmin() {
   const [confirmData, setConfirmData] = useState<{ id: string, type: 'confirm_seat' | 'delete' } | null>(null);
   
   useEffect(() => {
+    // Check for notification permission on mount
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
     // Bookings listener - Ascending order (Oldest first)
     const qb = query(collection(db, 'bookings'), orderBy('createdAt', 'asc'));
+    let initialLoad = true;
+
     const unsubB = onSnapshot(qb, (snap) => {
       const bs: Booking[] = [];
+      
+      snap.docChanges().forEach((change) => {
+        if (change.type === 'added' && !initialLoad) {
+          const data = change.doc.data() as Booking;
+          // Trigger Notification
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            new Notification('New Booking Request!', {
+              body: `${data.userName} has requested a seat (Counselor: ${data.selectedMemberName})`,
+              icon: 'https://cdn-icons-png.flaticon.com/512/3119/3119338.png'
+            });
+            // Play notification sound
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.play().catch(e => console.log('Audio overlap/block:', e));
+          }
+        }
+      });
+
       snap.forEach(d => bs.push({ id: d.id, ...d.data() } as Booking));
       setBookings(bs);
       setLoading(false);
+      initialLoad = false;
     });
 
     // Members listener

@@ -19,22 +19,32 @@ export function UnityHistory({ memberName }: Props) {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
-    if (!memberName || !user) {
+    if (!user) {
         setLoading(false);
         return;
     }
 
     const q = query(
       collection(db, 'bookings'),
-      where('authUid', '==', user.uid),
-      where('selectedMemberName', '==', memberName),
       orderBy('createdAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const bs: Booking[] = [];
       snapshot.forEach((doc) => {
-        bs.push({ id: doc.id, ...doc.data() } as Booking);
+        const data = doc.data() as Booking;
+        // Logic: If memberName is provided (Member login), only show their bookings.
+        // If no memberName (Admin or direct candidate view), show what's allowed.
+        if (memberName) {
+          if (data.selectedMemberName.toLowerCase() === memberName.toLowerCase()) {
+            bs.push({ id: doc.id, ...data });
+          }
+        } else {
+          // Admin view or specific authUid view logic
+          if (data.authUid === user.uid) {
+             bs.push({ id: doc.id, ...data });
+          }
+        }
       });
       setBookings(bs);
       setLoading(false);
@@ -43,7 +53,7 @@ export function UnityHistory({ memberName }: Props) {
     });
 
     return () => unsubscribe();
-  }, [memberName]);
+  }, [memberName, user]);
 
   const getStatusStyle = (status: string) => {
     switch (status) {
