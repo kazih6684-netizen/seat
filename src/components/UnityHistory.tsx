@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { OperationType, handleFirestoreError } from '../lib/utils';
 import { Booking } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Filter, History as HistoryIcon, MapPin, Calendar, Clock, ChevronRight, Shield, XCircle, CheckCircle2, Bell } from 'lucide-react';
+import { Search, Filter, History as HistoryIcon, MapPin, Calendar, Clock, ChevronRight, Shield, XCircle, CheckCircle2, Bell, Trash2 } from 'lucide-react';
 import { UnityInvoice } from './UnityInvoice';
+import { toast } from 'react-hot-toast';
 
 interface Props {
   memberName?: string;
@@ -17,6 +18,17 @@ export function UnityHistory({ memberName }: Props) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'bookings', id));
+      toast.success('বুকিং ডিলেট করা হয়েছে');
+      setDeleteConfirm(null);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, 'bookings');
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -128,8 +140,25 @@ export function UnityHistory({ memberName }: Props) {
                  <div className={`px-2 md:px-4 py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-[1px] border ${getStatusStyle(booking.status)}`}>
                     {getStatusLabel(booking.status)}
                  </div>
-                 <div className="p-1.5 md:p-2 bg-white/5 rounded-lg md:rounded-xl border border-white/10 group-hover:border-gold/50 group-hover:text-gold transition-all">
-                    <Bell className="w-4 h-4 md:w-5 h-5" />
+                 <div className="flex items-center gap-2">
+                   <div 
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setSelectedBooking(booking);
+                     }}
+                     className="p-1.5 md:p-2 bg-white/5 rounded-lg md:rounded-xl border border-white/10 group-hover:border-gold/50 group-hover:text-gold transition-all"
+                   >
+                      <Bell className="w-4 h-4 md:w-5 h-5" />
+                   </div>
+                   <div 
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setDeleteConfirm(booking.id);
+                     }}
+                     className="p-1.5 md:p-2 bg-red-500/10 text-red-500/50 hover:text-red-500 rounded-lg md:rounded-xl border border-red-500/10 hover:border-red-500/50 transition-all"
+                   >
+                      <Trash2 className="w-4 h-4 md:w-5 h-5" />
+                   </div>
                  </div>
               </div>
             </motion.div>
@@ -137,6 +166,36 @@ export function UnityHistory({ memberName }: Props) {
         </div>
       )}
 
+
+      <AnimatePresence>
+        {deleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#0f172a] p-6 rounded-3xl border border-white/10 max-w-sm w-full shadow-2xl"
+            >
+              <h3 className="text-xl font-bold text-white mb-2 font-cinzel">বুকিং ডিলেট?</h3>
+              <p className="text-muted text-sm mb-6">আপনি কি নিশ্চিত যে এই বুকিংটি ডিলেট করতে চান? এটি আর ফিরে পাওয়া যাবে না।</p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 py-3 rounded-xl bg-white/5 text-white font-bold text-sm tracking-widest uppercase hover:bg-white/10 transition-colors"
+                >
+                  না
+                </button>
+                <button 
+                  onClick={() => handleDelete(deleteConfirm)}
+                  className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-sm tracking-widest uppercase hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
+                >
+                  হ্যাঁ, ডিলেট
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {selectedBooking && (
